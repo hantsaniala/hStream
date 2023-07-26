@@ -2,7 +2,6 @@ package hStream
 
 import (
 	"fmt"
-	"html/template"
 	"log"
 	"net"
 	"net/http"
@@ -33,7 +32,6 @@ func StartServer() {
 
 	addr := listener.Addr().(*net.TCPAddr)
 	log.Printf("Runing server on %s\n", addr.String())
-
 	hStream = &http.Server{
 		Addr:    addr.String(),
 		Handler: handlers.LoggingHandler(os.Stdout, registerHandlers()),
@@ -47,16 +45,13 @@ func StartServer() {
 
 func registerHandlers() *mux.Router {
 	router := mux.NewRouter()
-	// TODO: Remove `/public/` from assets URL
-	assetsDir := "/public/assets"
-	router.PathPrefix(assetsDir).Handler(http.StripPrefix(assetsDir, http.FileServer(http.Dir("."+assetsDir))))
 
-	router.HandleFunc("/", indexPage).Methods("GET")
-	router.HandleFunc("/{id}", indexPage).Methods("GET")
-	router.HandleFunc("/media/{mId}/stream/", streamMasterHandler).Methods("GET")
-	router.HandleFunc("/media/{mId}/stream/{folder}/plist.m3u8/", streamFolderHandler).Methods("GET")
-	router.HandleFunc("/media/{mId}/stream/{folder}/plist.m3u8/{segName:index[0-9]+.ts}", streamSegHandler).Methods("GET")
+	// media
+	router.HandleFunc("/media/{mId}/stream/", streamMasterHandler)                               //.Methods("GET", "OPTIONS")
+	router.HandleFunc("/media/{mId}/stream/{folder}/plist.m3u8", streamFolderHandler)            //.Methods("GET")
+	router.HandleFunc("/media/{mId}/stream/{folder}/{segName:index[0-9]+.ts}", streamSegHandler) //.Methods("GET")
 
+	// api
 	router.HandleFunc("/api/v1/videos", PostVideo).Methods("POST")
 	router.HandleFunc("/api/v1/videos", GetVideos).Methods("GET")
 	router.HandleFunc("/api/v1/videos/{id}", GetVideo).Methods("GET")
@@ -66,26 +61,11 @@ func registerHandlers() *mux.Router {
 	return router
 }
 
-func indexPage(w http.ResponseWriter, r *http.Request) {
-	tmpl, _ := template.ParseFiles("public/index.html")
-	// log.Println(r.FormValue("id"))
-	id := mux.Vars(r)["id"]
-	wd := WebData{
-		ID: id,
-	}
-	// log.Println(wd.ID)
-	// http.ServeFile(w, r, "public/index.html")
-	tmpl.Execute(w, &wd)
-}
-
 func streamMasterHandler(response http.ResponseWriter, request *http.Request) {
-	log.Println("streamMasterHandler")
+	if (*request).Method == "OPTIONS" {
+		return
+	}
 	vars := mux.Vars(request)
-	// mId, err := strconv.Atoi(vars["mId"])
-	// if err != nil {
-	// 	response.WriteHeader(http.StatusNotFound)
-	// 	return
-	// }
 	mId := vars["mId"]
 
 	mediaBase := getMediaBase(mId)
@@ -93,7 +73,6 @@ func streamMasterHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func streamFolderHandler(response http.ResponseWriter, request *http.Request) {
-	log.Println("streamFolderHandler")
 	vars := mux.Vars(request)
 	mId := vars["mId"]
 
@@ -104,7 +83,6 @@ func streamFolderHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func streamSegHandler(response http.ResponseWriter, request *http.Request) {
-	log.Println("streamSegHandler")
 	vars := mux.Vars(request)
 	mId := vars["mId"]
 
@@ -123,18 +101,24 @@ func getMediaBase(mId string) string {
 
 func serveHlsM3u8(w http.ResponseWriter, r *http.Request, mediaBase string, folder string, m3u8Name string) {
 	mediaFile := fmt.Sprintf("%s/%s", mediaBase, m3u8Name)
-	log.Println("folder", folder)
 	if folder != "" {
 		mediaFile = fmt.Sprintf("%s/%s/%s", mediaBase, folder, m3u8Name)
 	}
-	log.Println(mediaFile)
-	http.ServeFile(w, r, mediaFile)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 	w.Header().Set("Content-Type", "application/x-mpegURL")
+	http.ServeFile(w, r, mediaFile)
 }
 
 func serveHlsTs(w http.ResponseWriter, r *http.Request, mediaBase string, folder string, segName string) {
 	mediaFile := fmt.Sprintf("%s/%s/%s", mediaBase, folder, segName)
-	log.Println(mediaFile)
-	http.ServeFile(w, r, mediaFile)
 	w.Header().Set("Content-Type", "video/MP2T")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+	w.Header().Set("Content-Type", "application/x-mpegURL")
+	http.ServeFile(w, r, mediaFile)
 }
