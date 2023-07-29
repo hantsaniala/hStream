@@ -32,6 +32,7 @@ func StartServer() {
 
 	addr := listener.Addr().(*net.TCPAddr)
 	log.Printf("Runing server on %s\n", addr.String())
+
 	hStream = &http.Server{
 		Addr:    addr.String(),
 		Handler: handlers.LoggingHandler(os.Stdout, registerHandlers()),
@@ -57,6 +58,9 @@ func registerHandlers() *mux.Router {
 	router.HandleFunc("/api/v1/videos/{id}", GetVideo).Methods("GET")
 	router.HandleFunc("/api/v1/videos/{id}", UpdateVideo).Methods("PUT")
 	router.HandleFunc("/api/v1/videos/{id}", DeleteVideo).Methods("DELETE")
+
+	// static
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./ui/dist/")))
 
 	return router
 }
