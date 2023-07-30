@@ -98,11 +98,6 @@ func streamSegHandler(response http.ResponseWriter, request *http.Request) {
 	serveHlsTs(response, request, mediaBase, folder, segName)
 }
 
-func getMediaBase(mId string) string {
-	mediaRoot := GetEnv("MEDIA_ROOT")
-	return fmt.Sprintf("%s/%s", mediaRoot, mId)
-}
-
 func serveHlsM3u8(w http.ResponseWriter, r *http.Request, mediaBase string, folder string, m3u8Name string) {
 	mediaFile := fmt.Sprintf("%s/%s", mediaBase, m3u8Name)
 	if folder != "" {

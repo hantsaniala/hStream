@@ -51,7 +51,7 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 func GetVideo(w http.ResponseWriter, r *http.Request) {
 	var video Video
 	id := mux.Vars(r)["id"]
-	db.First(&video, id)
+	db.First(&video, "id = ?", id)
 	if video.ID == "" {
 		json.NewEncoder(w).Encode("video not found!")
 		return
@@ -76,7 +76,7 @@ func GetVideos(w http.ResponseWriter, r *http.Request) {
 func UpdateVideo(w http.ResponseWriter, r *http.Request) {
 	var video Video
 	id := mux.Vars(r)["id"]
-	db.First(&video, id)
+	db.First(&video, "id = ?", id)
 	if video.ID == "" {
 		json.NewEncoder(w).Encode("video not found!")
 		return
@@ -90,13 +90,25 @@ func UpdateVideo(w http.ResponseWriter, r *http.Request) {
 func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 	var video Video
 	id := mux.Vars(r)["id"]
-	db.First(&video, id)
+	db.First(&video, "id = ?", id)
 	if video.ID == "" {
 		json.NewEncoder(w).Encode("video not found!")
 		return
 	}
-	db.Delete(&video, id)
-	// TODO: Delete existing file too
+	originalFile := video.GetOriginalFilePath()
+	err := os.Remove(originalFile)
+	if err != nil {
+		log.Println(err)
+	}
+
+	encodedFolder := video.GetEncodedDestinationPath("", 0, 0)
+	err = os.RemoveAll(encodedFolder)
+	if err != nil {
+		log.Println(err)
+	}
+
+	db.Delete(&video, "id = ?", id)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode("video deleted successfully")
 }
