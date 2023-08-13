@@ -1,5 +1,7 @@
 # hStream
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/hantsaniala/hStream.svg)](https://pkg.go.dev/github.com/hantsaniala/hStream)
+
 A simple VOD server made with Go.
 
 ## Requirements
