@@ -28,7 +28,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: hStream server run;hStream broker run
+    command: ./hStream server run;./hStream broker run
     env_file:
       - .env
     ports:
