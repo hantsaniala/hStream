@@ -38,7 +38,9 @@ services:
     networks:
       - hStream
     volumes:
-      - upload:/app/upload
+      - ./upload:/app/upload
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   # upload:
