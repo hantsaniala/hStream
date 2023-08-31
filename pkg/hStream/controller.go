@@ -24,7 +24,8 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	newFileName := currUUID4 + "." + strings.Split(handler.Filename, ".")[1]
+	splitedFilename := strings.Split(handler.Filename, ".")
+	newFileName := currUUID4 + "." + splitedFilename[len(splitedFilename)-1]
 
 	f, err := os.OpenFile(GetEnv("UPLOAD_ROOT")+"/original/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
 
