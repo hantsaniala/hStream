@@ -53,7 +53,7 @@ func GetVideo(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	db.First(&video, "id = ?", id)
 	if video.ID == "" {
-		json.NewEncoder(w).Encode("video not found!")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	SetStreamURL(&video, r)
@@ -78,7 +78,7 @@ func UpdateVideo(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	db.First(&video, "id = ?", id)
 	if video.ID == "" {
-		json.NewEncoder(w).Encode("video not found!")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	json.NewDecoder(r.Body).Decode(&video)
@@ -92,7 +92,7 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	db.First(&video, "id = ?", id)
 	if video.ID == "" {
-		json.NewEncoder(w).Encode("video not found!")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	originalFile := video.GetOriginalFilePath()
