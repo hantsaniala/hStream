@@ -9,6 +9,9 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Install ffmpeg
+RUN apt-get -y update && apt-get -y upgrade && apt-get install -y --no-install-recommends ffmpeg
+
 # Copy the source code. Note the slash at the end, as explained in
 # https://docs.docker.com/engine/reference/builder/#copy
 COPY *.go ./
