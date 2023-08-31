@@ -28,13 +28,32 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ./hStream server run;./hStream broker run
+    command: ./hStream server run
     env_file:
       - .env
     ports:
-      - "9000:9000"
+      - "5480:5480"
     depends_on:
       - db
+    networks:
+      - hStream
+    volumes:
+      - ./upload:/app/upload
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  worker:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./hStream broker run
+    env_file:
+      - .env
+    ports:
+      - "6379:6379"
+    depends_on:
+      - broker
     networks:
       - hStream
     volumes:
