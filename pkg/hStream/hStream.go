@@ -14,7 +14,7 @@ import (
 
 var (
 	// ADDR    = "localhost"
-	PORT        = "9000"
+	PORT        = "5480"
 	hStream     *http.Server
 	hTaskClient *asynq.Client
 )
