@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 	"time"
 )
 
@@ -70,7 +69,7 @@ func SetStreamURL(v *Video, r *http.Request) error {
 }
 
 func (v *Video) GetOriginalFilePath() string {
-	return path.Join(GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+strings.Split(v.FileName, ".")[1])
+	return path.Join(GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
 }
 
 func (v *Video) GetEncodedDestinationPath(format string, resX int, resY int) string {

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -24,8 +23,7 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	splitedFilename := strings.Split(handler.Filename, ".")
-	newFileName := currUUID4 + "." + splitedFilename[len(splitedFilename)-1]
+	newFileName := currUUID4 + "." + getFileExt(handler.Filename)
 
 	f, err := os.OpenFile(GetEnv("UPLOAD_ROOT")+"/original/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
 
