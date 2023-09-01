@@ -13,7 +13,6 @@ import (
 
 func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// TODO: handle FormFile input
-	w.Header().Set("Content-Type", "application/json")
 	var video Video
 	currUUID4 := uuid.NewString()
 	r.ParseMultipartForm(100 << 20)           // Max file size: 100Mo
@@ -44,6 +43,8 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 
 	encodeVideo(currUUID4)
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(video)
 }
 
