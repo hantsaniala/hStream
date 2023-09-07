@@ -73,7 +73,7 @@ func GetVideos(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(videos)
 }
 
-func UpdateVideo(w http.ResponseWriter, r *http.Request) {
+func FullUpdateVideo(w http.ResponseWriter, r *http.Request) {
 	var video Video
 	id := mux.Vars(r)["id"]
 	db.First(&video, "id = ?", id)
@@ -83,6 +83,53 @@ func UpdateVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&video)
 	db.Save(&video)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(video)
+}
+
+func PartialUpdateVideo(w http.ResponseWriter, r *http.Request) {
+	var video, partialVideo Video
+	id := mux.Vars(r)["id"]
+	db.First(&video, "id = ?", id)
+	if video.ID == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&partialVideo)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	if partialVideo.ID != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Video ID can't be manualy set")
+		return
+	}
+
+	if partialVideo.StreamURL != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Video Stream URL can't be manualy set")
+		return
+	}
+
+	if !partialVideo.CreatedAt.Equal(time.Time{}) && !partialVideo.CreatedAt.Equal(video.CreatedAt) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Video CreatedAt can't be manualy set")
+		return
+	}
+
+	if !partialVideo.UpdatedAt.Equal(time.Time{}) && !partialVideo.UpdatedAt.Equal(video.UpdatedAt) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Video UpdatedAt can't be manualy set")
+		return
+	}
+
+	partialVideo.UpdatedAt = time.Time{}
+
+	db.Model(&video).Updates(partialVideo)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(video)
 }

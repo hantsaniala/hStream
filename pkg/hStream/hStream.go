@@ -56,7 +56,8 @@ func registerHandlers() *mux.Router {
 	router.HandleFunc("/api/v1/videos", PostVideo).Methods("POST")
 	router.HandleFunc("/api/v1/videos", GetVideos).Methods("GET")
 	router.HandleFunc("/api/v1/videos/{id}", GetVideo).Methods("GET")
-	router.HandleFunc("/api/v1/videos/{id}", UpdateVideo).Methods("PUT")
+	router.HandleFunc("/api/v1/videos/{id}", FullUpdateVideo).Methods("PUT")
+	router.HandleFunc("/api/v1/videos/{id}", PartialUpdateVideo).Methods("PATCH")
 	router.HandleFunc("/api/v1/videos/{id}", DeleteVideo).Methods("DELETE")
 
 	// static
