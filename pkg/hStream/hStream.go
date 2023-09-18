@@ -60,6 +60,9 @@ func registerHandlers() *mux.Router {
 	router.HandleFunc("/api/v1/videos/{id}", PartialUpdateVideo).Methods("PATCH")
 	router.HandleFunc("/api/v1/videos/{id}", DeleteVideo).Methods("DELETE")
 
+	// Check health
+	router.HandleFunc("/check", HealthCheck).Methods("GET")
+
 	// static
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./ui/dist/")))
 
