@@ -47,6 +47,13 @@ func StartServer() {
 func registerHandlers() *mux.Router {
 	router := mux.NewRouter()
 
+	cors := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}), // Change this to your allowed origins
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "PATCH", "DELETE"}),
+		handlers.AllowedHeaders([]string{"Content-Type"}),
+	)
+	router.Use(cors)
+
 	// media
 	router.HandleFunc("/media/{mId}/stream/", streamMasterHandler)                               //.Methods("GET", "OPTIONS")
 	router.HandleFunc("/media/{mId}/stream/{folder}/plist.m3u8", streamFolderHandler)            //.Methods("GET")
