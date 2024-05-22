@@ -68,6 +68,30 @@ func SetStreamURL(v *Video, r *http.Request) error {
 	return nil
 }
 
+// Get vertical resolution.
+func (v *Video) GetResY() (int, error) {
+	cmd := exec.Command("ffprobe",
+		"-v", "error",
+		"-select_streams", "v:0",
+		"-show_entries", "stream=height",
+		"-of", "csv=p=0",
+		v.GetOriginalFilePath())
+
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+
+	sOut := string(out)
+	sOut = strings.TrimSpace(sOut)
+	iOut, err := strconv.Atoi(sOut)
+	if err != nil {
+		return 0, err
+	}
+
+	return iOut, nil
+}
+
 func (v *Video) GetOriginalFilePath() string {
 	return path.Join(GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
 }
