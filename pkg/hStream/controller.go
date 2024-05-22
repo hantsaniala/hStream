@@ -39,6 +39,11 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 		Title:    r.Form["title"][0],
 	}
 
+	err = video.SetDuration()
+	if err != nil {
+		log.Println(err)
+	}
+
 	// json.NewDecoder(r.Body).Decode(&video)
 	db.Create(&video)
 
