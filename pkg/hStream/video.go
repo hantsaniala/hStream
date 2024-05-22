@@ -1,11 +1,15 @@
 package hStream
 
 import (
+	"bufio"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -169,6 +173,64 @@ func (v *Video) Encode(format string, resX int, resY int) error {
 		"-hls_segment_filename", path.Join(destDir, "%v/index%02d.ts"),
 		"-var_stream_map", "v:0,a:0,name:1080 v:1,a:1,name:720 v:2,a:2,name:360", path.Join(destDir, "%v/plist.m3u8"),
 	)
+	out, err := cmd.CombinedOutput()
+
+	if out != nil {
+		log.Println(string(out))
+	}
+
+	if err != nil && err.Error() != "exit status 1" {
+		log.Fatal(err)
+	}
+	return nil
+}
+
+// New version of `Encode()` that split step by encoding resolution.
+func (v *Video) Encode2(res int) error {
+	log.Printf("Encoding %s with resolution of %dp", v.ID[:8], res)
+
+	destDir := v.GetEncodedDestinationPath()
+
+	if _, err := os.Stat(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res))); os.IsNotExist(err) {
+		os.MkdirAll(destDir, 0644)
+	}
+
+	availOptions := GetEncodeOption()
+	op := availOptions[res]
+
+	desiredWidth := (res * 16) / 9
+
+	encodingArgs := []string{
+		"-i", v.GetOriginalFilePath(),
+		"-vf", fmt.Sprintf("scale=w=%d:h=%d", desiredWidth, res),
+		"-c:v", "libx264",
+		"-x264-params", "nal-hrd=cbr:force-cfr=1",
+		"-b:v", op.VideoBitrate,
+		"-maxrate:v", op.VideoMaxRate,
+		"-minrate:v", op.VideoMinRate,
+		"-bufsize:v", op.VideoBufSize,
+		"-preset", "slow",
+		"-g", "48",
+		"-sc_threshold", "0",
+		"-keyint_min", "48",
+		"-c:a", "aac",
+		"-b:a", op.AudioBitrate,
+		"-ac", "2",
+		"-f", "hls",
+		"-hls_time", "10",
+		"-start_number", "0",
+		"-hls_list_size", "0",
+		"-hls_playlist_type", "vod",
+		"-hls_flags", "independent_segments",
+		"-hls_segment_type", "mpegts",
+		"-master_pl_name", fmt.Sprintf("index-%d.m3u8", res),
+		"-hls_segment_filename", path.Join(destDir, "%v/index%02d.ts"),
+		"-var_stream_map", fmt.Sprintf("v:0,a:0,name:%d", res),
+		path.Join(destDir, "%v/plist.m3u8"),
+	}
+
+	cmd := exec.Command("ffmpeg", encodingArgs...)
+
 	out, err := cmd.CombinedOutput()
 
 	if out != nil {
