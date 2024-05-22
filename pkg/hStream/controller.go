@@ -149,7 +149,7 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	encodedFolder := video.GetEncodedDestinationPath("", 0, 0)
+	encodedFolder := video.GetEncodedDestinationPath()
 	err = os.RemoveAll(encodedFolder)
 	if err != nil {
 		log.Println(err)

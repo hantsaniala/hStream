@@ -72,8 +72,7 @@ func (v *Video) GetOriginalFilePath() string {
 	return path.Join(GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
 }
 
-func (v *Video) GetEncodedDestinationPath(format string, resX int, resY int) string {
-	// return path.Join(GetEnv("MEDIA_ROOT"), v.ID, format, strconv.Itoa(resY))
+func (v *Video) GetEncodedDestinationPath() string {
 	return path.Join(GetEnv("MEDIA_ROOT"), v.ID)
 }
 
@@ -88,22 +87,11 @@ func (v *Video) Encode(format string, resX int, resY int) error {
 		format = "hls"
 	}
 
-	destDir := v.GetEncodedDestinationPath(format, resX, resY)
+	destDir := v.GetEncodedDestinationPath()
 
 	if _, err := os.Stat(path.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
 		os.MkdirAll(destDir, 0644)
 	}
-
-	// out, err := exec.Command("ffmpeg",
-	// 	"-i", v.GetOriginalFilePath(),
-	// 	"-profile:v", "baseline",
-	// 	"-level", "3.0",
-	// 	"-s", strconv.Itoa(resX)+"x"+strconv.Itoa(resY),
-	// 	"-start_number", "0",
-	// 	"-hls_time", "10",
-	// 	"-hls_list_size", "0",
-	// 	"-f", "hls",
-	// 	path.Join(destDir, "index.m3u8")).Output()
 
 	cmd := exec.Command("ffmpeg",
 		"-i", v.GetOriginalFilePath(),
