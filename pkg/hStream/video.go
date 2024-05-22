@@ -30,7 +30,9 @@ type Video struct {
 	// Author string `json:"author"`
 
 	// Video duration.
-	Duration int `json:"duration"`
+	Duration int `json:"-"`
+
+	Duration2 float64 `json:"duration"`
 
 	// // Default location path after video upload.
 	// OriginalPath string `json:"originalPath"`
@@ -98,6 +100,32 @@ func (v *Video) GetOriginalFilePath() string {
 
 func (v *Video) GetEncodedDestinationPath() string {
 	return path.Join(GetEnv("MEDIA_ROOT"), v.ID)
+}
+
+// Set Video duration using ffprobe.
+func (v *Video) SetDuration() error {
+	filePath := v.GetOriginalFilePath()
+	cmd := exec.Command("ffprobe",
+		"-v", "error",
+		"-show_entries", "format=duration",
+		"-of", "default=noprint_wrappers=1:nokey=1",
+		filePath,
+	)
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	sOut := string(out)
+	sOut = strings.TrimSpace(sOut)
+
+	d, err := strconv.ParseFloat(sOut, 64)
+	if err != nil {
+		return err
+	}
+
+	v.Duration2 = d
+
+	return nil
 }
 
 // Create a folder with the video UUID as name.
