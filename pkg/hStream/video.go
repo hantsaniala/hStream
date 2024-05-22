@@ -1,11 +1,15 @@
 package hStream
 
 import (
+	"bufio"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -30,7 +34,9 @@ type Video struct {
 	// Author string `json:"author"`
 
 	// Video duration.
-	Duration int `json:"duration"`
+	Duration int `json:"-"`
+
+	Duration2 float64 `json:"duration"`
 
 	// // Default location path after video upload.
 	// OriginalPath string `json:"originalPath"`
@@ -68,13 +74,62 @@ func SetStreamURL(v *Video, r *http.Request) error {
 	return nil
 }
 
+// Get vertical resolution.
+func (v *Video) GetResY() (int, error) {
+	cmd := exec.Command("ffprobe",
+		"-v", "error",
+		"-select_streams", "v:0",
+		"-show_entries", "stream=height",
+		"-of", "csv=p=0",
+		v.GetOriginalFilePath())
+
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+
+	sOut := string(out)
+	sOut = strings.TrimSpace(sOut)
+	iOut, err := strconv.Atoi(sOut)
+	if err != nil {
+		return 0, err
+	}
+
+	return iOut, nil
+}
+
 func (v *Video) GetOriginalFilePath() string {
 	return path.Join(GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
 }
 
-func (v *Video) GetEncodedDestinationPath(format string, resX int, resY int) string {
-	// return path.Join(GetEnv("MEDIA_ROOT"), v.ID, format, strconv.Itoa(resY))
+func (v *Video) GetEncodedDestinationPath() string {
 	return path.Join(GetEnv("MEDIA_ROOT"), v.ID)
+}
+
+// Set Video duration using ffprobe.
+func (v *Video) SetDuration() error {
+	filePath := v.GetOriginalFilePath()
+	cmd := exec.Command("ffprobe",
+		"-v", "error",
+		"-show_entries", "format=duration",
+		"-of", "default=noprint_wrappers=1:nokey=1",
+		filePath,
+	)
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	sOut := string(out)
+	sOut = strings.TrimSpace(sOut)
+
+	d, err := strconv.ParseFloat(sOut, 64)
+	if err != nil {
+		return err
+	}
+
+	v.Duration2 = d
+
+	return nil
 }
 
 // Create a folder with the video UUID as name.
@@ -88,22 +143,11 @@ func (v *Video) Encode(format string, resX int, resY int) error {
 		format = "hls"
 	}
 
-	destDir := v.GetEncodedDestinationPath(format, resX, resY)
+	destDir := v.GetEncodedDestinationPath()
 
 	if _, err := os.Stat(path.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
 		os.MkdirAll(destDir, 0644)
 	}
-
-	// out, err := exec.Command("ffmpeg",
-	// 	"-i", v.GetOriginalFilePath(),
-	// 	"-profile:v", "baseline",
-	// 	"-level", "3.0",
-	// 	"-s", strconv.Itoa(resX)+"x"+strconv.Itoa(resY),
-	// 	"-start_number", "0",
-	// 	"-hls_time", "10",
-	// 	"-hls_list_size", "0",
-	// 	"-f", "hls",
-	// 	path.Join(destDir, "index.m3u8")).Output()
 
 	cmd := exec.Command("ffmpeg",
 		"-i", v.GetOriginalFilePath(),
@@ -139,4 +183,125 @@ func (v *Video) Encode(format string, resX int, resY int) error {
 		log.Fatal(err)
 	}
 	return nil
+}
+
+// New version of `Encode()` that split step by encoding resolution.
+func (v *Video) Encode2(res int) error {
+	log.Printf("Encoding %s with resolution of %dp", v.ID[:8], res)
+
+	destDir := v.GetEncodedDestinationPath()
+
+	if _, err := os.Stat(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res))); os.IsNotExist(err) {
+		os.MkdirAll(destDir, 0644)
+	}
+
+	availOptions := GetEncodeOption()
+	op := availOptions[res]
+
+	desiredWidth := (res * 16) / 9
+
+	encodingArgs := []string{
+		"-i", v.GetOriginalFilePath(),
+		"-vf", fmt.Sprintf("scale=w=%d:h=%d", desiredWidth, res),
+		"-c:v", "libx264",
+		"-x264-params", "nal-hrd=cbr:force-cfr=1",
+		"-b:v", op.VideoBitrate,
+		"-maxrate:v", op.VideoMaxRate,
+		"-minrate:v", op.VideoMinRate,
+		"-bufsize:v", op.VideoBufSize,
+		"-preset", "slow",
+		"-g", "48",
+		"-sc_threshold", "0",
+		"-keyint_min", "48",
+		"-c:a", "aac",
+		"-b:a", op.AudioBitrate,
+		"-ac", "2",
+		"-f", "hls",
+		"-hls_time", "10",
+		"-start_number", "0",
+		"-hls_list_size", "0",
+		"-hls_playlist_type", "vod",
+		"-hls_flags", "independent_segments",
+		"-hls_segment_type", "mpegts",
+		"-master_pl_name", fmt.Sprintf("index-%d.m3u8", res),
+		"-hls_segment_filename", path.Join(destDir, "%v/index%02d.ts"),
+		"-var_stream_map", fmt.Sprintf("v:0,a:0,name:%d", res),
+		path.Join(destDir, "%v/plist.m3u8"),
+	}
+
+	cmd := exec.Command("ffmpeg", encodingArgs...)
+
+	out, err := cmd.CombinedOutput()
+
+	if out != nil {
+		log.Println(string(out))
+	}
+
+	if err != nil && err.Error() != "exit status 1" {
+		log.Fatal(err)
+	}
+	return nil
+}
+
+// Generate master playlist from multiple master playlist
+func (v *Video) MergeMasterPlaylist(resList []int) error {
+	var commonS []string
+
+	destDir := v.GetEncodedDestinationPath()
+	masterFile := path.Join(destDir, "index.m3u8")
+
+	for i, res := range resList {
+		var uniq []string
+		f, err := os.Open(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
+		if err != nil {
+			log.Println("Error opening playlist")
+			continue
+		}
+		defer f.Close()
+
+		sc := bufio.NewScanner(f)
+		line := 0
+
+		for sc.Scan() {
+			l := sc.Text()
+			if line < 2 {
+				commonS = append(commonS, l)
+			} else {
+				uniq = append(uniq, l)
+			}
+			line++
+		}
+		if err := sc.Err(); err != nil {
+			log.Println("Error reading file", err)
+			continue
+		}
+
+		if i == 0 {
+			writeToFile(masterFile, commonS)
+		}
+
+		writeToFile(masterFile, uniq)
+
+		// Remove file after processing
+		os.Remove(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
+	}
+
+	return nil
+}
+
+func writeToFile(filename string, lines []string) {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Error opening file for writing", err)
+		return
+	}
+	defer f.Close()
+
+	for _, line := range lines {
+		_, err := f.WriteString(line + "\n")
+		if err != nil {
+			fmt.Println("Error writing to file", err)
+			return
+		}
+	}
 }

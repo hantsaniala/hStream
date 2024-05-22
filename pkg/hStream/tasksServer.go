@@ -59,7 +59,7 @@ func encodeVideo(id string) {
 		if err != nil {
 			log.Fatalf("Could not enqueue task: %v", err)
 		}
-		log.Printf("Enqueued task: id=%s queue=%s videoId=%s", info.ID, info.Queue, id[:8])
+		log.Printf("Enqueued task: id=%s queue=%s videoId=%s", info.ID[:8], info.Queue, id[:8])
 	}
 
 }

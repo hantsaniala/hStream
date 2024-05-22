@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/hibiken/asynq"
 )
@@ -60,25 +61,57 @@ func HandleVideoEncodeTask(ctx context.Context, t *asynq.Task) error {
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 	}
-	log.Printf("Encoding %s with resolution of %dp", p.UUID[:8], p.ResY)
-	// TODO: Get Video PATH from UUID
-	// TODO: Encode video with ffmpeg
-
-	// ```
-	// ffmpeg -i jwb-096_MG_01_r360P.mp4 -profile:v baseline -level 3.0 -s 640x360 -start_number 0 -hls_time 10 -hls_list_size 0 -f hls index.m3u8
-	// ```
 
 	var vid Video
 	db.Where(&Video{ID: p.UUID}).First(&vid)
 	if vid.ID == "" {
 		log.Fatalf("Video with id=%s not found", p.UUID[:8])
 	}
-	err := vid.Encode("", p.ResX, p.ResY)
+
+	resX, err := vid.GetResY()
 	if err != nil {
+		log.Println(err)
+	}
+
+	availRes := []int{
+		1080,
+		720,
+		540,
+		360,
+	}
+
+	var outRes []int
+	for _, r := range availRes {
+		if resX > r {
+			outRes = append(outRes, r)
+		}
+	}
+
+	// Force resolution to be 360p if lower than all available resolution
+	if len(outRes) == 0 {
+		outRes = append(outRes, 360)
+	}
+
+	var wg sync.WaitGroup
+	errs := make(chan error, 1)
+
+	for _, r := range outRes {
+		wg.Add(1)
+		go func(r int) {
+			defer wg.Done()
+			errs <- vid.Encode2(r)
+		}(r)
+	}
+
+	if err := <-errs; err != nil {
 		log.Fatal(err)
 	}
+
+	wg.Wait()
 	vid.IsReady = true
 	db.Save(&vid)
+	vid.MergeMasterPlaylist(outRes)
+
 	return nil
 }
 

@@ -39,6 +39,11 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 		Title:    r.Form["title"][0],
 	}
 
+	err = video.SetDuration()
+	if err != nil {
+		log.Println(err)
+	}
+
 	// json.NewDecoder(r.Body).Decode(&video)
 	db.Create(&video)
 
@@ -149,7 +154,7 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	encodedFolder := video.GetEncodedDestinationPath("", 0, 0)
+	encodedFolder := video.GetEncodedDestinationPath()
 	err = os.RemoveAll(encodedFolder)
 	if err != nil {
 		log.Println(err)
