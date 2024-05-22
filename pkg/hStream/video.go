@@ -128,3 +128,66 @@ func (v *Video) Encode(format string, resX int, resY int) error {
 	}
 	return nil
 }
+
+// Generate master playlist from multiple master playlist
+func (v *Video) MergeMasterPlaylist(resList []int) error {
+	var commonS []string
+
+	destDir := v.GetEncodedDestinationPath()
+	masterFile := path.Join(destDir, "index.m3u8")
+
+	for i, res := range resList {
+		var uniq []string
+		f, err := os.Open(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
+		if err != nil {
+			log.Println("Error opening playlist")
+			continue
+		}
+		defer f.Close()
+
+		sc := bufio.NewScanner(f)
+		line := 0
+
+		for sc.Scan() {
+			l := sc.Text()
+			if line < 2 {
+				commonS = append(commonS, l)
+			} else {
+				uniq = append(uniq, l)
+			}
+			line++
+		}
+		if err := sc.Err(); err != nil {
+			log.Println("Error reading file", err)
+			continue
+		}
+
+		if i == 0 {
+			writeToFile(masterFile, commonS)
+		}
+
+		writeToFile(masterFile, uniq)
+
+		// Remove file after processing
+		os.Remove(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
+	}
+
+	return nil
+}
+
+func writeToFile(filename string, lines []string) {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Error opening file for writing", err)
+		return
+	}
+	defer f.Close()
+
+	for _, line := range lines {
+		_, err := f.WriteString(line + "\n")
+		if err != nil {
+			fmt.Println("Error writing to file", err)
+			return
+		}
+	}
+}
