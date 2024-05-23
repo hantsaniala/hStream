@@ -30,37 +30,15 @@ Then edit it to match your existing credentials.
 
 Finally you can install with:
 
-```sh
-go install .
-```
-
-Or directly install without cloning the project with:
-
-```sh
-go install github.com/hantsaniala/hStream
-```
-
-## Build
-
-Or you can build the project first with:
-
-```sh
-go build .
-```
-
 ## Run
 
-After building the project, you can run it with:
+You can run the project using docker compose:
 
 ```sh
-hStream server run
+docker compose up -d --build
 ```
 
-Task broker must be run in parallel:
-
-```sh
-hStream broker run
-```
+It will build necessary dependencies and run your app under http://localhost:5480
 
 ## TODO
 
