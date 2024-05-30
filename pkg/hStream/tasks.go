@@ -17,9 +17,8 @@ const (
 )
 
 type VideoEncodePayload struct {
-	UUID string
-	ResX int
-	ResY int
+	UUID        string
+	KeyInfoPath string
 }
 
 // type ImageResizePayload struct {
@@ -31,8 +30,8 @@ type VideoEncodePayload struct {
 // A task consists of a type and a payload.
 //----------------------------------------------
 
-func NewVideoEncodeTask(uuid string, resX int, resY int) (*asynq.Task, error) {
-	payload, err := json.Marshal(VideoEncodePayload{UUID: uuid, ResX: resX, ResY: resY})
+func NewVideoEncodeTask(uuid string, keyinfoPath string) (*asynq.Task, error) {
+	payload, err := json.Marshal(VideoEncodePayload{UUID: uuid, KeyInfoPath: keyinfoPath})
 	if err != nil {
 		return nil, err
 	}
