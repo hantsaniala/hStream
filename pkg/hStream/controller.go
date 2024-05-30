@@ -2,10 +2,14 @@ package hStream
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -168,4 +172,74 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+type DownloadRequestInput struct {
+	PublicKey    string `json:"public_key"`
+	PlaylistData string `json:"playlist_data"`
+	Video        string `json:"video"`
+	Resolution   int    `json:"resolution"`
+}
+
+type DownloadRequestResponse struct {
+	UUID string `json:"uuid"`
+}
+
+func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
+	var input DownloadRequestInput
+	var resp DownloadRequestResponse
+
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	var video Video
+	db.First(&video, "id = ?", input.Video)
+	resp.UUID = video.ID
+
+	// TODO: Move value directly to .env for download folder
+	downloadDir := path.Join(GetEnv("UPLOAD_ROOT"), "download")
+	destDir := path.Join(downloadDir, video.ID)
+	if _, err := os.Stat(filepath.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
+		os.MkdirAll(destDir, 0644)
+	}
+
+	err = video.GenVideoKey(destDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	video.GenVideoKeyinfo(destDir)
+	video.GenMetadata(filepath.Join(destDir, "metadata-playlist.json"), input.PlaylistData)
+	video.GenMetadata(filepath.Join(destDir, "metadata.json"), input.PlaylistData)
+	video.Encode2(input.Resolution, filepath.Join(destDir, "enc.keyinfo"), destDir)
+
+	files, err := os.ReadDir(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		err := MoveFile(filepath.Join(destDir, fmt.Sprint(input.Resolution), f.Name()), filepath.Join(destDir, f.Name()))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	os.Remove(filepath.Join(destDir, fmt.Sprintf("index-%d.m3u8", input.Resolution)))
+	os.RemoveAll(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
+
+	err = video.ArchiveAndCompress(destDir, downloadDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	video.RemoveFolder(destDir)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }

@@ -66,6 +66,7 @@ func registerHandlers() *mux.Router {
 	router.HandleFunc("/api/v1/videos/{id}", FullUpdateVideo).Methods("PUT")
 	router.HandleFunc("/api/v1/videos/{id}", PartialUpdateVideo).Methods("PATCH")
 	router.HandleFunc("/api/v1/videos/{id}", DeleteVideo).Methods("DELETE")
+	router.HandleFunc("/api/v1/download/", PrepareDownloadVideo).Methods("POST")
 
 	// Check health
 	router.HandleFunc("/check", HealthCheck).Methods("GET")
