@@ -243,3 +243,22 @@ func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
+
+type DownloadStatusResponse struct {
+	Ready bool `json:"ready"`
+}
+
+func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
+	var stat DownloadStatusResponse
+	id := mux.Vars(r)["id"]
+
+	// TODO: Use better check
+	fileP := path.Join(GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.tar.gz", id))
+	if _, err := os.Stat(fileP); !errors.Is(err, os.ErrNotExist) {
+		stat.Ready = true
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stat)
+}
