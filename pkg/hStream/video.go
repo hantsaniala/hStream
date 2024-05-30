@@ -190,10 +190,8 @@ func (v *Video) Encode(format string, resX int, resY int) error {
 }
 
 // New version of `Encode()` that split step by encoding resolution.
-func (v *Video) Encode2(res int) error {
+func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 	log.Printf("Encoding %s with resolution of %dp", v.ID[:8], res)
-
-	destDir := v.GetEncodedDestinationPath()
 
 	if _, err := os.Stat(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res))); os.IsNotExist(err) {
 		os.MkdirAll(destDir, 0644)
@@ -227,6 +225,7 @@ func (v *Video) Encode2(res int) error {
 		"-hls_playlist_type", "vod",
 		"-hls_flags", "independent_segments",
 		"-hls_segment_type", "mpegts",
+		"-hls_key_info_file", keyinfoPath,
 		"-master_pl_name", fmt.Sprintf("index-%d.m3u8", res),
 		"-hls_segment_filename", path.Join(destDir, "%v/index%02d.ts"),
 		"-var_stream_map", fmt.Sprintf("v:0,a:0,name:%d", res),

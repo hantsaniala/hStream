@@ -95,11 +95,13 @@ func HandleVideoEncodeTask(ctx context.Context, t *asynq.Task) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, 1)
 
+	destDir := vid.GetEncodedDestinationPath()
+
 	for _, r := range outRes {
 		wg.Add(1)
 		go func(r int) {
 			defer wg.Done()
-			errs <- vid.Encode2(r)
+			errs <- vid.Encode2(r, p.KeyInfoPath, destDir)
 		}(r)
 	}
 
