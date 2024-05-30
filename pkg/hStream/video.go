@@ -1,13 +1,17 @@
 package hStream
 
 import (
+	"archive/tar"
 	"bufio"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -304,4 +308,139 @@ func writeToFile(filename string, lines []string) {
 			return
 		}
 	}
+}
+
+func (v *Video) GenVideoKey(destPath string) error {
+	encryptionKeyPath := filepath.Join(destPath, "enc.key")
+	cmd := exec.Command("openssl", "rand", "16")
+	out, err := cmd.Output()
+	if err != nil && err.Error() != "exit status 1" {
+		return err
+	}
+
+	writeToFile(encryptionKeyPath, []string{string(out)})
+	return nil
+}
+
+func (v *Video) GenVideoKeyinfo(destPath string) error {
+	keyFilename := "enc.key"
+	keyInfoPath := filepath.Join(destPath, "enc.keyinfo")
+	keyURI := fmt.Sprintf("https://{IP_PORT}/%s/enc.key", v.ID)
+	cmd := exec.Command("openssl", "rand", "-hex", "16")
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+
+	keyIV := strings.TrimSpace(string(out))
+
+	keyInfoContent := []string{
+		keyURI,
+		keyFilename,
+		keyIV,
+	}
+
+	writeToFile(keyInfoPath, keyInfoContent)
+	return nil
+}
+
+func (v *Video) GenMetadata(destPath, data string) error {
+	f, err := os.OpenFile(destPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening file for writing, err: %s", err)
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(data)
+	if err != nil {
+		return fmt.Errorf("error writing to file, err: %s", err)
+	}
+
+	return nil
+}
+
+func (v *Video) ArchiveAndCompress(source, target string) error {
+	outputFile, err := os.Create(filepath.Join(target, fmt.Sprintf("%s.mp4", v.ID)))
+	if err != nil {
+		panic(err)
+	}
+	defer outputFile.Close()
+
+	// Create a gzip writer
+	gzipWriter, _ := gzip.NewWriterLevel(outputFile, gzip.BestCompression)
+	defer gzipWriter.Close()
+
+	// Create a tar writer
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	info, err := os.Stat(source)
+	if err != nil {
+		return nil
+	}
+
+	var baseDir string
+	if info.IsDir() {
+		baseDir = filepath.Base(source)
+	}
+
+	// Walk through the folder and add files to the tar archive
+	err = filepath.Walk(source,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			// Create a new tar header
+			header, err := tar.FileInfoHeader(info, info.Name())
+			if err != nil {
+				return err
+			}
+
+			if baseDir != "" {
+				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+			}
+
+			// Write the header to the tar archive
+			err = tarWriter.WriteHeader(header)
+			if err != nil {
+				return err
+			}
+
+			// If the file is not a directory, write its contents to the tar archive
+			if !info.IsDir() {
+				file, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+				defer file.Close()
+
+				_, err = io.Copy(tarWriter, file)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Video) RemoveFolder(source string) error {
+	err := os.RemoveAll(source)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Video) RemoveFile(source string) error {
+	err := os.Remove(source)
+	if err != nil {
+		return err
+	}
+	return nil
 }
