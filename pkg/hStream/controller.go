@@ -51,7 +51,9 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// json.NewDecoder(r.Body).Decode(&video)
 	db.Create(&video)
 
-	encodeVideo(currUUID4)
+	keyinfoPath := path.Join("enc.keyinfo")
+
+	EnqueueEncodeVideoTask(currUUID4, keyinfoPath)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
