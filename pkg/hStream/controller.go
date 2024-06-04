@@ -2,10 +2,14 @@ package hStream
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,7 +20,7 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// TODO: handle FormFile input
 	var video Video
 	currUUID4 := uuid.NewString()
-	r.ParseMultipartForm(100 << 20)           // Max file size: 100Mo
+	r.ParseMultipartForm(1000 << 20)          // Max file size: 100Mo
 	file, handler, err := r.FormFile("video") // retrieve the file from form data
 	if err != nil {
 		log.Println(err)
@@ -47,7 +51,9 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// json.NewDecoder(r.Body).Decode(&video)
 	db.Create(&video)
 
-	encodeVideo(currUUID4)
+	keyinfoPath := path.Join("enc.keyinfo")
+
+	EnqueueEncodeVideoTask(currUUID4, keyinfoPath)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -168,4 +174,60 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+type DownloadRequestInput struct {
+	PublicKey    string `json:"public_key"`
+	PlaylistData string `json:"playlist_data"`
+	Video        string `json:"video"`
+	Resolution   int    `json:"resolution"`
+}
+
+type DownloadRequestResponse struct {
+	UUID string `json:"uuid"`
+}
+
+func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
+	var input DownloadRequestInput
+	var resp DownloadRequestResponse
+
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	err = EnqueueDownloadVideoTask(input)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	resp.UUID = input.Video
+	//TODO: Handle error
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+type DownloadStatusResponse struct {
+	Ready bool `json:"ready"`
+}
+
+func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
+	var stat DownloadStatusResponse
+	id := mux.Vars(r)["id"]
+
+	// TODO: Use better check
+	fileP := path.Join(GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.tar.gz", id))
+	if _, err := os.Stat(fileP); !errors.Is(err, os.ErrNotExist) {
+		stat.Ready = true
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stat)
 }
