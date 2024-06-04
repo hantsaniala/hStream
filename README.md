@@ -38,6 +38,14 @@ docker compose up -d --build
 
 It will build necessary dependencies and run your app under http://localhost:5480
 
+## Generating key
+
+To generate key necessary for the project, run:
+
+```sh
+./hStream gen key
+```
+
 ## TODO
 
 - [ ] Add gRPC support
