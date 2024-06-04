@@ -20,7 +20,7 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// TODO: handle FormFile input
 	var video Video
 	currUUID4 := uuid.NewString()
-	r.ParseMultipartForm(100 << 20)           // Max file size: 100Mo
+	r.ParseMultipartForm(1000 << 20)          // Max file size: 100Mo
 	file, handler, err := r.FormFile("video") // retrieve the file from form data
 	if err != nil {
 		log.Println(err)
