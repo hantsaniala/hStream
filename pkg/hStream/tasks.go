@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path"
+	"path/filepath"
 	"sync"
 
 	"github.com/hibiken/asynq"
@@ -12,7 +15,8 @@ import (
 
 // A list of task types.
 const (
-	TypeVideoEncode = "video:encode"
+	TypeVideoEncode          = "video:encode"
+	TypeVideoDownloadPrepare = "video:download"
 	// TypeImageResize   = "image:resize"
 )
 
@@ -36,6 +40,14 @@ func NewVideoEncodeTask(uuid string, keyinfoPath string) (*asynq.Task, error) {
 		return nil, err
 	}
 	return asynq.NewTask(TypeVideoEncode, payload), nil
+}
+
+func NewVideoDownloadPrepareTask(input DownloadRequestInput) (*asynq.Task, error) {
+	payload, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
+	}
+	return asynq.NewTask(TypeVideoDownloadPrepare, payload), nil
 }
 
 // func NewImageResizeTask(src string) (*asynq.Task, error) {
@@ -113,6 +125,57 @@ func HandleVideoEncodeTask(ctx context.Context, t *asynq.Task) error {
 	db.Save(&vid)
 	vid.MergeMasterPlaylist(outRes)
 
+	return nil
+}
+
+func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
+	var input DownloadRequestInput
+	if err := json.Unmarshal(t.Payload(), &input); err != nil {
+		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+	}
+
+	var video Video
+	db.First(&video, "id = ?", input.Video)
+	// resp.UUID = video.ID
+
+	// TODO: Move value directly to .env for download folder
+	downloadDir := path.Join(GetEnv("UPLOAD_ROOT"), "download")
+	destDir := path.Join(downloadDir, video.ID)
+	if _, err := os.Stat(filepath.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
+		os.MkdirAll(destDir, 0644)
+	}
+
+	err = video.GenVideoKey(destDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	video.GenVideoKeyinfo(destDir)
+	video.GenMetadata(filepath.Join(destDir, "metadata-playlist.json"), input.PlaylistData)
+	video.GenMetadata(filepath.Join(destDir, "metadata.json"), input.PlaylistData)
+	video.Encode2(input.Resolution, filepath.Join(destDir, "enc.keyinfo"), destDir)
+
+	files, err := os.ReadDir(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		err := MoveFile(filepath.Join(destDir, fmt.Sprint(input.Resolution), f.Name()), filepath.Join(destDir, f.Name()))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	os.Remove(filepath.Join(destDir, fmt.Sprintf("index-%d.m3u8", input.Resolution)))
+	os.RemoveAll(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
+
+	err = video.ArchiveAndCompress(destDir, downloadDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	video.RemoveFolder(destDir)
 	return nil
 }
 
