@@ -294,40 +294,6 @@ func (v *Video) MergeMasterPlaylist(resList []int) error {
 	return nil
 }
 
-func (v *Video) GenVideoKey(destPath string) error {
-	encryptionKeyPath := filepath.Join(destPath, "enc.key")
-	cmd := exec.Command("openssl", "rand", "16")
-	out, err := cmd.Output()
-	if err != nil && err.Error() != "exit status 1" {
-		return err
-	}
-
-	utils.WriteToFile(encryptionKeyPath, []string{string(out)})
-	return nil
-}
-
-func (v *Video) GenVideoKeyinfo(destPath string) error {
-	keyFilename := "enc.key"
-	keyInfoPath := filepath.Join(destPath, "enc.keyinfo")
-	keyURI := fmt.Sprintf("https://{IP_PORT}/%s/enc.key", v.ID)
-	cmd := exec.Command("openssl", "rand", "-hex", "16")
-	out, err := cmd.Output()
-	if err != nil {
-		return err
-	}
-
-	keyIV := strings.TrimSpace(string(out))
-
-	keyInfoContent := []string{
-		keyURI,
-		keyFilename,
-		keyIV,
-	}
-
-	utils.WriteToFile(keyInfoPath, keyInfoContent)
-	return nil
-}
-
 func (v *Video) GenMetadata(destPath, data string) error {
 	f, err := os.OpenFile(destPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
