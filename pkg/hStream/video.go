@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hantsaniala/hStream/pkg/utils"
 )
 
 // Model
@@ -280,33 +282,16 @@ func (v *Video) MergeMasterPlaylist(resList []int) error {
 		}
 
 		if i == 0 {
-			writeToFile(masterFile, commonS)
+			utils.WriteToFile(masterFile, commonS)
 		}
 
-		writeToFile(masterFile, uniq)
+		utils.WriteToFile(masterFile, uniq)
 
 		// Remove file after processing
 		os.Remove(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
 	}
 
 	return nil
-}
-
-func writeToFile(filename string, lines []string) {
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("Error opening file for writing", err)
-		return
-	}
-	defer f.Close()
-
-	for _, line := range lines {
-		_, err := f.WriteString(line + "\n")
-		if err != nil {
-			fmt.Println("Error writing to file", err)
-			return
-		}
-	}
 }
 
 func (v *Video) GenVideoKey(destPath string) error {
@@ -317,7 +302,7 @@ func (v *Video) GenVideoKey(destPath string) error {
 		return err
 	}
 
-	writeToFile(encryptionKeyPath, []string{string(out)})
+	utils.WriteToFile(encryptionKeyPath, []string{string(out)})
 	return nil
 }
 
@@ -339,7 +324,7 @@ func (v *Video) GenVideoKeyinfo(destPath string) error {
 		keyIV,
 	}
 
-	writeToFile(keyInfoPath, keyInfoContent)
+	utils.WriteToFile(keyInfoPath, keyInfoContent)
 	return nil
 }
 
