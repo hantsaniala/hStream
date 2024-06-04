@@ -28,8 +28,6 @@ cp .env.example .env
 
 Then edit it to match your existing credentials.
 
-Finally you can install with:
-
 ## Run
 
 You can run the project using docker compose:
