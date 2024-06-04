@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hantsaniala/hStream/pkg/utils"
 )
 
 // Model
@@ -280,66 +282,15 @@ func (v *Video) MergeMasterPlaylist(resList []int) error {
 		}
 
 		if i == 0 {
-			writeToFile(masterFile, commonS)
+			utils.WriteToFile(masterFile, commonS)
 		}
 
-		writeToFile(masterFile, uniq)
+		utils.WriteToFile(masterFile, uniq)
 
 		// Remove file after processing
 		os.Remove(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
 	}
 
-	return nil
-}
-
-func writeToFile(filename string, lines []string) {
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("Error opening file for writing", err)
-		return
-	}
-	defer f.Close()
-
-	for _, line := range lines {
-		_, err := f.WriteString(line + "\n")
-		if err != nil {
-			fmt.Println("Error writing to file", err)
-			return
-		}
-	}
-}
-
-func (v *Video) GenVideoKey(destPath string) error {
-	encryptionKeyPath := filepath.Join(destPath, "enc.key")
-	cmd := exec.Command("openssl", "rand", "16")
-	out, err := cmd.Output()
-	if err != nil && err.Error() != "exit status 1" {
-		return err
-	}
-
-	writeToFile(encryptionKeyPath, []string{string(out)})
-	return nil
-}
-
-func (v *Video) GenVideoKeyinfo(destPath string) error {
-	keyFilename := "enc.key"
-	keyInfoPath := filepath.Join(destPath, "enc.keyinfo")
-	keyURI := fmt.Sprintf("https://{IP_PORT}/%s/enc.key", v.ID)
-	cmd := exec.Command("openssl", "rand", "-hex", "16")
-	out, err := cmd.Output()
-	if err != nil {
-		return err
-	}
-
-	keyIV := strings.TrimSpace(string(out))
-
-	keyInfoContent := []string{
-		keyURI,
-		keyFilename,
-		keyIV,
-	}
-
-	writeToFile(keyInfoPath, keyInfoContent)
 	return nil
 }
 

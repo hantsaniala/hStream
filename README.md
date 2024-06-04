@@ -28,8 +28,6 @@ cp .env.example .env
 
 Then edit it to match your existing credentials.
 
-Finally you can install with:
-
 ## Run
 
 You can run the project using docker compose:
@@ -39,6 +37,14 @@ docker compose up -d --build
 ```
 
 It will build necessary dependencies and run your app under http://localhost:5480
+
+## Generating key
+
+To generate key necessary for the project, run:
+
+```sh
+./hStream gen key
+```
 
 ## TODO
 

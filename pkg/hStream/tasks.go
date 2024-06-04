@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/hantsaniala/hStream/pkg/gen"
 	"github.com/hibiken/asynq"
 )
 
@@ -145,12 +146,12 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 		os.MkdirAll(destDir, 0644)
 	}
 
-	err = video.GenVideoKey(destDir)
+	err = gen.GenKey(destDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	video.GenVideoKeyinfo(destDir)
+	gen.GenKeyinfo(destDir, fmt.Sprintf("https://{IP_PORT}/%s/enc.key", video.ID))
 	video.GenMetadata(filepath.Join(destDir, "metadata-playlist.json"), input.PlaylistData)
 	video.GenMetadata(filepath.Join(destDir, "metadata.json"), input.PlaylistData)
 	video.Encode2(input.Resolution, filepath.Join(destDir, "enc.keyinfo"), destDir)
