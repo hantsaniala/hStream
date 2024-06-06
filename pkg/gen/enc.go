@@ -9,7 +9,7 @@ import (
 )
 
 func GenKey(destPath string) error {
-	encryptionKeyPath := filepath.Join(destPath, "enc.key")
+	encryptionKeyPath := filepath.Join(destPath, utils.GetEnv("KEY"))
 	cmd := exec.Command("openssl", "rand", "16")
 	out, err := cmd.Output()
 	if err != nil && err.Error() != "exit status 1" {
@@ -21,8 +21,8 @@ func GenKey(destPath string) error {
 }
 
 func GenKeyinfo(destPath, keyURI string) error {
-	keyFilename := "enc.key"
-	keyInfoPath := filepath.Join(destPath, "enc.keyinfo")
+	keyFilename := utils.GetEnv("KEY")
+	keyInfoPath := filepath.Join(destPath, utils.GetEnv("KEYINFO"))
 	cmd := exec.Command("openssl", "rand", "-hex", "16")
 	out, err := cmd.Output()
 	if err != nil {
