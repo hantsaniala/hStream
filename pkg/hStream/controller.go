@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/hantsaniala/hStream/pkg/utils"
 )
 
 func PostVideo(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +30,7 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 
 	newFileName := currUUID4 + "." + getFileExt(handler.Filename)
 
-	f, err := os.OpenFile(GetEnv("UPLOAD_ROOT")+"/original/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(utils.GetEnv("UPLOAD_ROOT")+"/original/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
 
 	if err != nil {
 		log.Println(err)
@@ -51,7 +52,7 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// json.NewDecoder(r.Body).Decode(&video)
 	db.Create(&video)
 
-	keyinfoPath := path.Join("enc.keyinfo")
+	keyinfoPath := filepath.Join(utils.GetEnv("KEYINFO"))
 
 	EnqueueEncodeVideoTask(currUUID4, keyinfoPath)
 
@@ -231,7 +232,7 @@ func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
 	// TODO: Use better check
-	fileP := path.Join(GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.tar.gz", id))
+	fileP := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.tar.gz", id))
 	if _, err := os.Stat(fileP); !errors.Is(err, os.ErrNotExist) {
 		stat.Ready = true
 	}

@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/hantsaniala/hStream/pkg/gen"
+	"github.com/hantsaniala/hStream/pkg/utils"
 	"github.com/hibiken/asynq"
 )
 
@@ -140,7 +141,7 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 	// resp.UUID = video.ID
 
 	// TODO: Move value directly to .env for download folder
-	downloadDir := path.Join(GetEnv("UPLOAD_ROOT"), "download")
+	downloadDir := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download")
 	destDir := path.Join(downloadDir, video.ID)
 	if _, err := os.Stat(filepath.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
 		os.MkdirAll(destDir, 0644)
@@ -151,10 +152,10 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 		log.Fatal(err)
 	}
 
-	gen.GenKeyinfo(destDir, fmt.Sprintf("https://{IP_PORT}/%s/enc.key", video.ID))
+	gen.GenKeyinfo(destDir, fmt.Sprintf("https://{IP_PORT}/%s/%s", video.ID, utils.GetEnv("KEY")))
 	video.GenMetadata(filepath.Join(destDir, "metadata-playlist.json"), input.PlaylistData)
 	video.GenMetadata(filepath.Join(destDir, "metadata.json"), input.PlaylistData)
-	video.Encode2(input.Resolution, filepath.Join(destDir, "enc.keyinfo"), destDir)
+	video.Encode2(input.Resolution, filepath.Join(destDir, utils.GetEnv("KEYINFO")), destDir)
 
 	files, err := os.ReadDir(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
 	if err != nil {

@@ -5,10 +5,12 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/hantsaniala/hStream/pkg/utils"
 )
 
 func getMediaBase(mId string) string {
-	mediaRoot := GetEnv("MEDIA_ROOT")
+	mediaRoot := utils.GetEnv("MEDIA_ROOT")
 	return fmt.Sprintf("%s/%s", mediaRoot, mId)
 }
 

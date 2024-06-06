@@ -3,18 +3,19 @@ package hStream
 import (
 	"log"
 
+	"github.com/hantsaniala/hStream/pkg/utils"
 	"github.com/hibiken/asynq"
 )
 
 // Start Task queue server.
 func StartTaskClient() {
-	hTaskClient = asynq.NewClient(asynq.RedisClientOpt{Addr: GetEnv("REDIS_SERVER")})
+	hTaskClient = asynq.NewClient(asynq.RedisClientOpt{Addr: utils.GetEnv("REDIS_SERVER")})
 	// defer hTaskClient.Close()
 }
 
 func StartTaskServer() {
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: GetEnv("REDIS_SERVER")},
+		asynq.RedisClientOpt{Addr: utils.GetEnv("REDIS_SERVER")},
 		asynq.Config{
 			// Specify how many concurrent workers to use
 			Concurrency: 10,

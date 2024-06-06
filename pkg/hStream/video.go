@@ -105,11 +105,11 @@ func (v *Video) GetResY() (int, error) {
 }
 
 func (v *Video) GetOriginalFilePath() string {
-	return path.Join(GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
+	return path.Join(utils.GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
 }
 
 func (v *Video) GetEncodedDestinationPath() string {
-	return path.Join(GetEnv("MEDIA_ROOT"), v.ID)
+	return path.Join(utils.GetEnv("MEDIA_ROOT"), v.ID)
 }
 
 // Set Video duration using ffprobe.
