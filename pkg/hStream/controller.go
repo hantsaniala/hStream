@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -210,6 +211,15 @@ func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+func DownloadFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	filename := fmt.Sprintf("%s.mp4", id)
+	filepath := filepath.Join("upload", "download", filename)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	http.ServeFile(w, r, filepath)
 }
 
 type DownloadStatusResponse struct {
