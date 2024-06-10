@@ -288,7 +288,7 @@ func (v *Video) MergeMasterPlaylist(resList []int) error {
 		if i == 0 {
 			utils.WriteToFile(masterFile, commonS)
 		}
-
+		utils.WriteToFile(masterFile, []string{"\n"})
 		utils.WriteToFile(masterFile, uniq)
 
 		// Remove file after processing
