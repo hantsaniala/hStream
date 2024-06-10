@@ -95,7 +95,7 @@ func HandleVideoEncodeTask(ctx context.Context, t *asynq.Task) error {
 
 	var outRes []int
 	for _, r := range availRes {
-		if resX > r {
+		if resX >= r {
 			outRes = append(outRes, r)
 		}
 	}
