@@ -105,10 +105,9 @@ func streamSegHandler(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	mId := vars["mId"]
 
-	segName, hasNoSegName := vars["segName"]
-	folder, hasNoFolder := vars["folder"]
+	segName := vars["segName"]
+	folder := vars["folder"]
 
-	log.Printf("hasNoSegName: %t\thasNoFolder: %t", hasNoSegName, hasNoFolder)
 	mediaBase := getMediaBase(mId)
 	serveHlsTs(response, request, mediaBase, folder, segName)
 }
