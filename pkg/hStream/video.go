@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hantsaniala/hStream/pkg/gen"
 	"github.com/hantsaniala/hStream/pkg/utils"
 )
 
@@ -295,6 +296,23 @@ func (v *Video) MergeMasterPlaylist(resList []int) error {
 		os.Remove(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
 	}
 
+	return nil
+}
+
+func (v *Video) CopyKey() error {
+	keyFile := filepath.Join(utils.GetEnv("KEYMASTER_FOLDER"), utils.GetEnv("KEY"))
+	destDir := filepath.Join(utils.GetEnv("KEY_FOLDER"), v.ID)
+	destFile := filepath.Join(destDir, utils.GetEnv("KEY"))
+
+	if _, err := os.Stat(destDir); os.IsNotExist(err) {
+		os.MkdirAll(destDir, 0644)
+	}
+
+	err := CopyFile(keyFile, destFile)
+	if err != nil {
+		return err
+	}
+	gen.GenKeyinfo(destDir, fmt.Sprintf("%s/api/v1/key/%s/%s", utils.GetEnv("HOST"), v.ID, utils.GetEnv("KEY")))
 	return nil
 }
 
