@@ -15,13 +15,14 @@ func GenKey(destPath string) error {
 	}
 
 	encryptionKeyPath := filepath.Join(destPath, utils.GetEnv("KEY"))
-	cmd := exec.Command("openssl", "rand", "16")
+	cmd := exec.Command("openssl", "rand", "-out", "-", "16")
 	out, err := cmd.Output()
 	if err != nil && err.Error() != "exit status 1" {
 		return err
 	}
+	sOut := strings.TrimSpace(string(out))
 
-	utils.WriteToFile(encryptionKeyPath, []string{string(out)})
+	utils.WriteToFile(encryptionKeyPath, []string{sOut})
 	return nil
 }
 
