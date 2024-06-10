@@ -250,3 +250,23 @@ func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stat)
 }
+
+func ServeKey(w http.ResponseWriter, r *http.Request) {
+	key, err := os.ReadFile(filepath.Join(utils.GetEnv("KEYMASTER_FOLDER"), utils.GetEnv("KEY")))
+	if err != nil {
+		http.Error(w, "Unable to read key file", http.StatusInternalServerError)
+		return
+	}
+	// Set CORS headers (if necessary)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	// Set appropriate headers for security
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+
+	w.Write(key)
+}
