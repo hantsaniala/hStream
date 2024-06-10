@@ -13,8 +13,12 @@ func WriteToFile(filename string, lines []string) {
 	}
 	defer f.Close()
 
-	for _, line := range lines {
-		_, err := f.WriteString(line + "\n")
+	for i, line := range lines {
+		if i > 0 {
+			line = fmt.Sprintf("\n%s", line)
+		}
+
+		_, err := f.WriteString(line)
 		if err != nil {
 			fmt.Println("Error writing to file", err)
 			return

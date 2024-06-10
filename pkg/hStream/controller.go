@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/hantsaniala/hStream/pkg/utils"
 )
 
 func PostVideo(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +30,7 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 
 	newFileName := currUUID4 + "." + getFileExt(handler.Filename)
 
-	f, err := os.OpenFile(GetEnv("UPLOAD_ROOT")+"/original/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(utils.GetEnv("UPLOAD_ROOT")+"/original/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
 
 	if err != nil {
 		log.Println(err)
@@ -51,7 +52,9 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// json.NewDecoder(r.Body).Decode(&video)
 	db.Create(&video)
 
-	keyinfoPath := path.Join("enc.keyinfo")
+	video.CopyKey()
+
+	keyinfoPath := filepath.Join(utils.GetEnv("KEY_FOLDER"), video.ID, utils.GetEnv("KEYINFO"))
 
 	EnqueueEncodeVideoTask(currUUID4, keyinfoPath)
 
@@ -166,6 +169,12 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
+	keyFolder := filepath.Join(utils.GetEnv("KEY_FOLDER"), video.ID)
+	err = os.RemoveAll(keyFolder)
+	if err != nil {
+		log.Println(err)
+	}
+
 	db.Delete(&video, "id = ?", id)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -179,6 +188,7 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 type DownloadRequestInput struct {
 	PublicKey    string `json:"public_key"`
 	PlaylistData string `json:"playlist_data"`
+	VideoData    string `json:"video_data"`
 	Video        string `json:"video"`
 	Resolution   int    `json:"resolution"`
 }
@@ -231,7 +241,7 @@ func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
 	// TODO: Use better check
-	fileP := path.Join(GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.tar.gz", id))
+	fileP := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.tar.gz", id))
 	if _, err := os.Stat(fileP); !errors.Is(err, os.ErrNotExist) {
 		stat.Ready = true
 	}
@@ -239,4 +249,24 @@ func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stat)
+}
+
+func ServeKey(w http.ResponseWriter, r *http.Request) {
+	key, err := os.ReadFile(filepath.Join(utils.GetEnv("KEYMASTER_FOLDER"), utils.GetEnv("KEY")))
+	if err != nil {
+		http.Error(w, "Unable to read key file", http.StatusInternalServerError)
+		return
+	}
+	// Set CORS headers (if necessary)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	// Set appropriate headers for security
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+
+	w.Write(key)
 }

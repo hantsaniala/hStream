@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hantsaniala/hStream/pkg/gen"
 	"github.com/hantsaniala/hStream/pkg/utils"
 )
 
@@ -105,11 +106,11 @@ func (v *Video) GetResY() (int, error) {
 }
 
 func (v *Video) GetOriginalFilePath() string {
-	return path.Join(GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
+	return path.Join(utils.GetEnv("UPLOAD_ROOT"), "original", v.ID+"."+getFileExt(v.FileName))
 }
 
 func (v *Video) GetEncodedDestinationPath() string {
-	return path.Join(GetEnv("MEDIA_ROOT"), v.ID)
+	return path.Join(utils.GetEnv("MEDIA_ROOT"), v.ID)
 }
 
 // Set Video duration using ffprobe.
@@ -242,8 +243,12 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 		log.Println(string(out))
 	}
 
+	if err != nil {
+		log.Println(err.Error())
+	}
+
 	if err != nil && err.Error() != "exit status 1" {
-		log.Fatal(err)
+		return err
 	}
 	return nil
 }
@@ -284,13 +289,30 @@ func (v *Video) MergeMasterPlaylist(resList []int) error {
 		if i == 0 {
 			utils.WriteToFile(masterFile, commonS)
 		}
-
+		utils.WriteToFile(masterFile, []string{"\n"})
 		utils.WriteToFile(masterFile, uniq)
 
 		// Remove file after processing
 		os.Remove(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res)))
 	}
 
+	return nil
+}
+
+func (v *Video) CopyKey() error {
+	keyFile := filepath.Join(utils.GetEnv("KEYMASTER_FOLDER"), utils.GetEnv("KEY"))
+	destDir := filepath.Join(utils.GetEnv("KEY_FOLDER"), v.ID)
+	destFile := filepath.Join(destDir, utils.GetEnv("KEY"))
+
+	if _, err := os.Stat(destDir); os.IsNotExist(err) {
+		os.MkdirAll(destDir, 0644)
+	}
+
+	err := CopyFile(keyFile, destFile)
+	if err != nil {
+		return err
+	}
+	gen.GenKeyinfo(destDir, fmt.Sprintf("%s/api/v1/key/%s/%s", utils.GetEnv("HOST"), v.ID, utils.GetEnv("KEY")))
 	return nil
 }
 

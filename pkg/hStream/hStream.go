@@ -1,6 +1,7 @@
 package hStream
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -67,6 +68,7 @@ func registerHandlers() *mux.Router {
 	router.HandleFunc("/api/v1/videos/{id}", PartialUpdateVideo).Methods("PATCH")
 	router.HandleFunc("/api/v1/videos/{id}", DeleteVideo).Methods("DELETE")
 	router.HandleFunc("/api/v1/download/", PrepareDownloadVideo).Methods("POST")
+	router.HandleFunc("/api/v1/key/{id}/enc.key", ServeKey).Methods("GET")
 	router.HandleFunc("/api/v1/download/{id}/check", CheckDownloadStatus).Methods("GET")
 	router.HandleFunc("/api/v1/file/{id}", DownloadFile).Methods("GET")
 
@@ -104,10 +106,9 @@ func streamSegHandler(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	mId := vars["mId"]
 
-	segName, hasNoSegName := vars["segName"]
-	folder, hasNoFolder := vars["folder"]
+	segName := vars["segName"]
+	folder := vars["folder"]
 
-	log.Printf("hasNoSegName: %t\thasNoFolder: %t", hasNoSegName, hasNoFolder)
 	mediaBase := getMediaBase(mId)
 	serveHlsTs(response, request, mediaBase, folder, segName)
 }
@@ -125,13 +126,21 @@ func serveHlsM3u8(w http.ResponseWriter, r *http.Request, mediaBase string, fold
 	http.ServeFile(w, r, mediaFile)
 }
 
-func serveHlsTs(w http.ResponseWriter, r *http.Request, mediaBase string, folder string, segName string) {
+func serveHlsTs(w http.ResponseWriter, _ *http.Request, mediaBase string, folder string, segName string) {
 	mediaFile := fmt.Sprintf("%s/%s/%s", mediaBase, folder, segName)
+	file, err := os.ReadFile(mediaFile)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
 	w.Header().Set("Content-Type", "video/MP2T")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 	w.Header().Set("Content-Type", "application/x-mpegURL")
-	http.ServeFile(w, r, mediaFile)
+	// http.ServeFile(w, r, mediaFile)
+	w.Write(file)
 }
