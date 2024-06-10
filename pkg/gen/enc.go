@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,10 @@ import (
 )
 
 func GenKey(destPath string) error {
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		os.MkdirAll(destPath, 0644)
+	}
+
 	encryptionKeyPath := filepath.Join(destPath, utils.GetEnv("KEY"))
 	cmd := exec.Command("openssl", "rand", "16")
 	out, err := cmd.Output()
@@ -21,8 +26,12 @@ func GenKey(destPath string) error {
 }
 
 func GenKeyinfo(destPath, keyURI string) error {
-	keyFilename := utils.GetEnv("KEY")
-	keyInfoPath := filepath.Join(destPath, utils.GetEnv("KEYINFO"))
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		os.MkdirAll(destPath, 0644)
+	}
+
+	keyFilename := filepath.Join(destPath, utils.GetEnv("KEY"))
+	keyInfoFile := filepath.Join(destPath, utils.GetEnv("KEYINFO"))
 	cmd := exec.Command("openssl", "rand", "-hex", "16")
 	out, err := cmd.Output()
 	if err != nil {
@@ -37,6 +46,6 @@ func GenKeyinfo(destPath, keyURI string) error {
 		keyIV,
 	}
 
-	utils.WriteToFile(keyInfoPath, keyInfoContent)
+	utils.WriteToFile(keyInfoFile, keyInfoContent)
 	return nil
 }
