@@ -242,8 +242,12 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 		log.Println(string(out))
 	}
 
+	if err != nil {
+		log.Println(err.Error())
+	}
+
 	if err != nil && err.Error() != "exit status 1" {
-		log.Fatal(err)
+		return err
 	}
 	return nil
 }
