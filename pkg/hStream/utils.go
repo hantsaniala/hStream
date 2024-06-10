@@ -46,3 +46,32 @@ func MoveFile(sourcePath, destPath string) error {
 	}
 	return nil
 }
+
+func CopyFile(sourcePath, destPath string) error {
+	// Source: https://stackoverflow.com/a/35353594/5527968
+
+	srcFile, err := os.Open(sourcePath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// creates if file doesn't exist
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	// check first var for number of bytes copied
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	err = destFile.Sync()
+	if err != nil {
+		return err
+	}
+	return nil
+}
