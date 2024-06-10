@@ -169,6 +169,12 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
+	keyFolder := filepath.Join(utils.GetEnv("KEY_FOLDER"), video.ID)
+	err = os.RemoveAll(keyFolder)
+	if err != nil {
+		log.Println(err)
+	}
+
 	db.Delete(&video, "id = ?", id)
 
 	w.Header().Set("Content-Type", "application/json")
