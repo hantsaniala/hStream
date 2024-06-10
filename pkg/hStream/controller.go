@@ -52,7 +52,9 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 	// json.NewDecoder(r.Body).Decode(&video)
 	db.Create(&video)
 
-	keyinfoPath := filepath.Join(utils.GetEnv("KEYINFO"))
+	video.CopyKey()
+
+	keyinfoPath := filepath.Join(utils.GetEnv("KEY_FOLDER"), video.ID, utils.GetEnv("KEYINFO"))
 
 	EnqueueEncodeVideoTask(currUUID4, keyinfoPath)
 
