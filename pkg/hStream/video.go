@@ -194,7 +194,7 @@ func (v *Video) Encode(format string, resX int, resY int) error {
 
 // New version of `Encode()` that split step by encoding resolution.
 func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
-	log.Printf("Encoding %s with resolution of %dp", v.ID[:8], res)
+	log.Printf("Start: Encoding %s with resolution of %dp", v.ID[:8], res)
 
 	if _, err := os.Stat(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res))); os.IsNotExist(err) {
 		os.MkdirAll(destDir, 0777)
@@ -250,6 +250,8 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 	if err != nil && err.Error() != "exit status 1" {
 		return err
 	}
+
+	log.Printf("Finished: Encoding %s with resolution of %dp", v.ID[:8], res)
 	return nil
 }
 
