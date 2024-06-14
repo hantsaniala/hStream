@@ -106,23 +106,31 @@ func HandleVideoEncodeTask(ctx context.Context, t *asynq.Task) error {
 	}
 
 	var wg sync.WaitGroup
-	errs := make(chan error, 1)
+	errs := make(chan error, len(outRes))
 
 	destDir := vid.GetEncodedDestinationPath()
 
-	for _, r := range outRes {
+	for i := 0; i < len(outRes); i++ {
 		wg.Add(1)
-		go func(r int, wg *sync.WaitGroup) {
+		go func(r int) {
 			defer wg.Done()
 			errs <- vid.Encode2(r, p.KeyInfoPath, destDir)
-		}(r, &wg)
+		}(outRes[i])
 	}
 
-	if err := <-errs; err != nil {
-		log.Fatal(err)
+	// Wait for all goroutines to finish and then close the errs channel
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+
+	// Collect errors
+	for err := range errs {
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	wg.Wait()
 	vid.IsReady = true
 	db.Save(&vid)
 	vid.MergeMasterPlaylist(outRes)
@@ -144,7 +152,7 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 	downloadDir := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download")
 	destDir := path.Join(downloadDir, video.ID)
 	if _, err := os.Stat(filepath.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
-		os.MkdirAll(destDir, 0644)
+		os.MkdirAll(destDir, 0777)
 	}
 
 	err = gen.GenKey(destDir)
