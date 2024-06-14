@@ -197,7 +197,7 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 	log.Printf("Encoding %s with resolution of %dp", v.ID[:8], res)
 
 	if _, err := os.Stat(path.Join(destDir, fmt.Sprintf("index-%d.m3u8", res))); os.IsNotExist(err) {
-		os.MkdirAll(destDir, 0644)
+		os.MkdirAll(destDir, 0777)
 	}
 
 	availOptions := GetEncodeOption()

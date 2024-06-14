@@ -144,7 +144,7 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 	downloadDir := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download")
 	destDir := path.Join(downloadDir, video.ID)
 	if _, err := os.Stat(filepath.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
-		os.MkdirAll(destDir, 0644)
+		os.MkdirAll(destDir, 0777)
 	}
 
 	err = gen.GenKey(destDir)
