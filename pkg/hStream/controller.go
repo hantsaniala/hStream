@@ -194,7 +194,7 @@ type DownloadRequestInput struct {
 }
 
 type DownloadRequestResponse struct {
-	UUID string `json:"uuid"`
+	URL string `json:"url"`
 }
 
 func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
@@ -215,10 +215,10 @@ func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.UUID = input.Video
+	resp.URL = fmt.Sprintf("%s/api/v1/file/%s", utils.GetEnv("HOST"), input.Video)
 	//TODO: Handle error
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
