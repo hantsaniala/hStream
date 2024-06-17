@@ -333,8 +333,8 @@ func (v *Video) GenMetadata(destPath, data string) error {
 	return nil
 }
 
-func (v *Video) ArchiveAndCompress(source, target string) error {
-	outputFile, err := os.Create(filepath.Join(target, fmt.Sprintf("%s.mp4", v.ID)))
+func (v *Video) ArchiveAndCompress(source, target, fname string) error {
+	outputFile, err := os.Create(filepath.Join(target, fmt.Sprintf("%s.%s", fname, ARCHIVE_EXT)))
 	if err != nil {
 		panic(err)
 	}

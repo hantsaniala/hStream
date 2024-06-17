@@ -18,6 +18,7 @@ var (
 	PORT        = "5480"
 	hStream     *http.Server
 	hTaskClient *asynq.Client
+	ARCHIVE_EXT = "mp4"
 )
 
 type WebData struct {

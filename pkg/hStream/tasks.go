@@ -150,7 +150,7 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 
 	// TODO: Move value directly to .env for download folder
 	downloadDir := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download")
-	destDir := path.Join(downloadDir, video.ID)
+	destDir := path.Join(downloadDir, input.VID)
 	if _, err := os.Stat(filepath.Join(destDir, "index.m3u8")); os.IsNotExist(err) {
 		os.MkdirAll(destDir, 0777)
 	}
@@ -160,7 +160,7 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 		log.Fatal(err)
 	}
 
-	gen.GenKeyinfo(destDir, fmt.Sprintf("https://{IP_PORT}/%s/%s", video.ID, utils.GetEnv("KEY")))
+	gen.GenKeyinfo(destDir, fmt.Sprintf("https://{IP_PORT}/%s/%s", input.VID, utils.GetEnv("KEY")))
 	video.GenMetadata(filepath.Join(destDir, "metadata-playlist.json"), input.PlaylistData)
 	video.GenMetadata(filepath.Join(destDir, "metadata.json"), input.VideoData)
 	video.Encode2(input.Resolution, filepath.Join(destDir, utils.GetEnv("KEYINFO")), destDir)
@@ -180,7 +180,7 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 	os.Remove(filepath.Join(destDir, fmt.Sprintf("index-%d.m3u8", input.Resolution)))
 	os.RemoveAll(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
 
-	err = video.ArchiveAndCompress(destDir, downloadDir)
+	err = video.ArchiveAndCompress(destDir, downloadDir, input.VID)
 	if err != nil {
 		log.Fatal(err)
 	}

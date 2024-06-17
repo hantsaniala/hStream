@@ -191,6 +191,7 @@ type DownloadRequestInput struct {
 	VideoData    string `json:"video_data"`
 	Video        string `json:"video"`
 	Resolution   int    `json:"resolution"`
+	VID          string `json:"v_id"`
 }
 
 type DownloadRequestResponse struct {
@@ -200,6 +201,7 @@ type DownloadRequestResponse struct {
 func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
 	var input DownloadRequestInput
 	var resp DownloadRequestResponse
+	input.VID = uuid.NewString()
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -215,7 +217,7 @@ func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.URL = fmt.Sprintf("%s/api/v1/file/%s", utils.GetEnv("HOST"), input.Video)
+	resp.URL = fmt.Sprintf("%s/api/v1/file/%s", utils.GetEnv("HOST"), input.VID)
 	//TODO: Handle error
 
 	w.WriteHeader(http.StatusCreated)
@@ -226,7 +228,7 @@ func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
 func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	filename := fmt.Sprintf("%s.mp4", id)
+	filename := fmt.Sprintf("%s.%s", id, ARCHIVE_EXT)
 	filepath := filepath.Join(utils.GetEnv("UPLOAD_ROOT"), "download", filename)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	http.ServeFile(w, r, filepath)
@@ -241,7 +243,7 @@ func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
 	// TODO: Use better check
-	fileP := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.tar.gz", id))
+	fileP := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.%s", id, ARCHIVE_EXT))
 	if _, err := os.Stat(fileP); !errors.Is(err, os.ErrNotExist) {
 		stat.Ready = true
 	}
