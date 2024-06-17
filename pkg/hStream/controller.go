@@ -227,7 +227,7 @@ func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	filename := fmt.Sprintf("%s.mp4", id)
-	filepath := filepath.Join("upload", "download", filename)
+	filepath := filepath.Join(utils.GetEnv("UPLOAD_ROOT"), "download", filename)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	http.ServeFile(w, r, filepath)
 }
