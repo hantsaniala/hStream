@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -271,4 +272,20 @@ func ServeKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Expires", "0")
 
 	w.Write(key)
+}
+
+func DeleteDownloadFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	fileP := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.%s", id, ARCHIVE_EXT))
+	err := os.Remove(fileP)
+	if err != nil && errors.Is(err, &fs.PathError{}) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "file deleted successfully"})
 }

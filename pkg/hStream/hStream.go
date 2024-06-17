@@ -72,6 +72,7 @@ func registerHandlers() *mux.Router {
 	router.HandleFunc("/api/v1/key/{id}/enc.key", ServeKey).Methods("GET")
 	router.HandleFunc("/api/v1/download/{id}/check", CheckDownloadStatus).Methods("GET")
 	router.HandleFunc("/api/v1/file/{id}", DownloadFile).Methods("GET")
+	router.HandleFunc("/api/v1/file/{id}", DeleteDownloadFile).Methods("DELETE")
 
 	// Check health
 	router.HandleFunc("/check", HealthCheck).Methods("GET")
