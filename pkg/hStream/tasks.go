@@ -190,7 +190,11 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 	video.RemoveFolder(destDir)
 
 	// Call webhook and skip if error exist
-	http.Get(input.WebhookReady)
+	_, err = http.Get(input.WebhookReady)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return nil
 }
 
