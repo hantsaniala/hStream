@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -187,6 +188,9 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 	}
 
 	video.RemoveFolder(destDir)
+
+	// Call webhook and skip if error exist
+	http.Get(input.WebhookReady)
 	return nil
 }
 

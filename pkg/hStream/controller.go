@@ -187,12 +187,14 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 type DownloadRequestInput struct {
-	PublicKey    string `json:"public_key"`
-	PlaylistData string `json:"playlist_data"`
-	VideoData    string `json:"video_data"`
-	Video        string `json:"video"`
-	Resolution   int    `json:"resolution"`
-	VID          string `json:"v_id"`
+	PublicKey     string `json:"public_key"`
+	PlaylistData  string `json:"playlist_data"`
+	VideoData     string `json:"video_data"`
+	Video         string `json:"video"`
+	Resolution    int    `json:"resolution"`
+	VID           string `json:"v_id"`
+	WebhookReady  string `json:"webhook_ready"`
+	WebhookDelete string `json:"webhook_delete"`
 }
 
 type DownloadRequestResponse struct {
