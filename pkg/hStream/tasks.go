@@ -161,10 +161,13 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 		log.Fatal(err)
 	}
 
+	playlistData, _ := json.Marshal(input.PlaylistData)
+	videoData, _ := json.Marshal(input.VideoData)
+
 	// gen.GenKeyinfo(destDir, fmt.Sprintf("https://{IP_PORT}/%s/%s", input.VID, utils.GetEnv("KEY")))
 	gen.GenKeyinfo(destDir, utils.GetEnv("KEY"))
-	video.GenMetadata(filepath.Join(destDir, "metadata-playlist.json"), input.PlaylistData)
-	video.GenMetadata(filepath.Join(destDir, "metadata.json"), input.VideoData)
+	video.GenMetadata(filepath.Join(destDir, "metadata-playlist.json"), string(playlistData))
+	video.GenMetadata(filepath.Join(destDir, "metadata.json"), string(videoData))
 	video.Encode2(input.Resolution, filepath.Join(destDir, utils.GetEnv("KEYINFO")), destDir)
 
 	files, err := os.ReadDir(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
