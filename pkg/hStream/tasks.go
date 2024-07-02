@@ -140,6 +140,95 @@ func HandleVideoEncodeTask(ctx context.Context, t *asynq.Task) error {
 	return nil
 }
 
+func HandleVideoRebuildTask(ctx context.Context, t *asynq.Task) error {
+	var p VideoEncodePayload
+	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+	}
+
+	var video Video
+	db.Where(&Video{ID: p.UUID}).First(&video)
+	if video.ID == "" {
+		log.Fatalf("Video with id=%s not found", p.UUID[:8])
+	}
+
+	video.IsReady = false
+	db.Save(&video)
+
+	resX, err := video.GetResY()
+	if err != nil {
+		log.Println(err)
+	}
+
+	availRes := []int{
+		1080,
+		720,
+		540,
+		360,
+	}
+
+	var outRes []int
+	for _, r := range availRes {
+		if resX >= r {
+			outRes = append(outRes, r)
+		}
+	}
+
+	// Force resolution to be 360p if lower than all available resolution
+	if len(outRes) == 0 {
+		outRes = append(outRes, 360)
+	}
+
+	var wg sync.WaitGroup
+	errs := make(chan error, len(outRes))
+
+	destDirOld := video.GetEncodedDestinationPath()
+
+	// Append random string to avoid overriding existing files first
+	destDirNew := fmt.Sprintf("%s-%s", destDirOld, RandomString(10))
+
+	for i := 0; i < len(outRes); i++ {
+		wg.Add(1)
+		go func(r int) {
+			defer wg.Done()
+			errs <- video.Encode2(r, p.KeyInfoPath, destDirNew)
+		}(outRes[i])
+	}
+
+	// Wait for all goroutines to finish and then close the errs channel
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+
+	// Collect errors
+	for err := range errs {
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	video.MergeMasterPlaylist(outRes)
+
+	// Remove old existing folder
+	err = os.RemoveAll(destDirOld)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Rename the new folder to the same as the original
+	err = os.Rename(destDirNew, destDirOld)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Only when everything is done that video should be ready
+	video.IsReady = true
+	db.Save(&video)
+
+	return nil
+}
+
 func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 	var input DownloadRequestInput
 	if err := json.Unmarshal(t.Payload(), &input); err != nil {
