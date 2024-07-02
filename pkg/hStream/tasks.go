@@ -54,6 +54,14 @@ func NewVideoDownloadPrepareTask(input DownloadRequestInput) (*asynq.Task, error
 	return asynq.NewTask(TypeVideoDownloadPrepare, payload), nil
 }
 
+func NewVideoRebuildTask(uuid string, keyinfoPath string) (*asynq.Task, error) {
+	payload, err := json.Marshal(VideoEncodePayload{UUID: uuid, KeyInfoPath: keyinfoPath})
+	if err != nil {
+		return nil, err
+	}
+	return asynq.NewTask(TypeVideoRebuild, payload), nil
+}
+
 // func NewImageResizeTask(src string) (*asynq.Task, error) {
 // 	payload, err := json.Marshal(ImageResizePayload{SourceURL: src})
 // 	if err != nil {
