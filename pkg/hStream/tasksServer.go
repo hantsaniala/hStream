@@ -58,6 +58,23 @@ func EnqueueEncodeVideoTask(id string, keyinfoPath string) error {
 	return nil
 }
 
+func EnqueueRebuildVideoTask(id string, keyinfoPath string) error {
+	StartTaskClient()
+
+	task, err := NewVideoRebuildTask(id, keyinfoPath)
+	if err != nil {
+		log.Fatalf("Could not create task: %v", err)
+	}
+
+	info, err := hTaskClient.Enqueue(task)
+	if err != nil {
+		log.Fatalf("Could not enqueue task: %v", err)
+	}
+
+	log.Printf("Enqueued task: id=%s queue=%s videoId=%s", info.ID[:8], info.Queue, id[:8])
+	return nil
+}
+
 func EnqueueDownloadVideoTask(input DownloadRequestInput) error {
 	StartTaskClient()
 
