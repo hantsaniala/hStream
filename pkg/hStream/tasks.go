@@ -19,6 +19,7 @@ import (
 // A list of task types.
 const (
 	TypeVideoEncode          = "video:encode"
+	TypeVideoRebuild         = "video:rebuild"
 	TypeVideoDownloadPrepare = "video:download"
 	// TypeImageResize   = "image:resize"
 )
