@@ -291,3 +291,20 @@ func DeleteDownloadFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "file deleted successfully"})
 }
+
+func RebuildVideo(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	var video Video
+	db.Where(&Video{ID: id}).First(&video)
+	if video.ID == "" {
+		log.Fatalf("Video with id=%s not found", id[:8])
+	}
+
+	keyinfoPath := filepath.Join(utils.GetEnv("KEY_FOLDER"), video.ID, utils.GetEnv("KEYINFO"))
+
+	EnqueueRebuildVideoTask(id, keyinfoPath)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(video)
+}
