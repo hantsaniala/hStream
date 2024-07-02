@@ -3,6 +3,7 @@ package hStream
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"strings"
 
@@ -74,4 +75,17 @@ func CopyFile(sourcePath, destPath string) error {
 		return err
 	}
 	return nil
+}
+
+// Generate random string
+func RandomString(n int) string {
+	// Source: https://golangdocs.com/generate-random-string-in-golang
+
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	s := make([]rune, n)
+	for i := range s {
+		s[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(s)
 }
