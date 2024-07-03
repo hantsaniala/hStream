@@ -208,12 +208,8 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 	encodingArgs := []string{
 		"-i", v.GetOriginalFilePath(),
 		"-vf", fmt.Sprintf("scale=w=%d:h=%d", desiredWidth, res),
-		"-c:v", "libx264",
-		"-x264-params", "nal-hrd=cbr:force-cfr=1",
-		"-b:v", op.VideoBitrate,
-		"-maxrate:v", op.VideoMaxRate,
-		"-minrate:v", op.VideoMinRate,
-		"-bufsize:v", op.VideoBufSize,
+		"-c:v", "libx265",
+		"-x265-params", "crf=28",
 		"-preset", "slow",
 		"-g", "48",
 		"-sc_threshold", "0",
@@ -256,10 +252,9 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 }
 
 // Generate master playlist from multiple master playlist
-func (v *Video) MergeMasterPlaylist(resList []int) error {
+func (v *Video) MergeMasterPlaylist(destDir string, resList []int) error {
 	var commonS []string
 
-	destDir := v.GetEncodedDestinationPath()
 	masterFile := path.Join(destDir, "index.m3u8")
 
 	for i, res := range resList {

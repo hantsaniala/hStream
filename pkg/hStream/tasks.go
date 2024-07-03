@@ -143,7 +143,7 @@ func HandleVideoEncodeTask(ctx context.Context, t *asynq.Task) error {
 
 	vid.IsReady = true
 	db.Save(&vid)
-	vid.MergeMasterPlaylist(outRes)
+	vid.MergeMasterPlaylist(destDir, outRes)
 
 	return nil
 }
@@ -216,7 +216,7 @@ func HandleVideoRebuildTask(ctx context.Context, t *asynq.Task) error {
 		}
 	}
 
-	video.MergeMasterPlaylist(outRes)
+	video.MergeMasterPlaylist(destDirNew, outRes)
 
 	// Remove old existing folder
 	err = os.RemoveAll(destDirOld)
