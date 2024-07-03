@@ -252,10 +252,9 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 }
 
 // Generate master playlist from multiple master playlist
-func (v *Video) MergeMasterPlaylist(resList []int) error {
+func (v *Video) MergeMasterPlaylist(destDir string, resList []int) error {
 	var commonS []string
 
-	destDir := v.GetEncodedDestinationPath()
 	masterFile := path.Join(destDir, "index.m3u8")
 
 	for i, res := range resList {
