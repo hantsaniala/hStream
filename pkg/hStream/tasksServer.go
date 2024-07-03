@@ -2,6 +2,7 @@ package hStream
 
 import (
 	"log"
+	"time"
 
 	"github.com/hantsaniala/hStream/pkg/utils"
 	"github.com/hibiken/asynq"
@@ -50,7 +51,7 @@ func EnqueueEncodeVideoTask(id string, keyinfoPath string) error {
 		log.Fatalf("Could not create task: %v", err)
 	}
 
-	info, err := hTaskClient.Enqueue(task)
+	info, err := hTaskClient.Enqueue(task, asynq.Timeout(1*time.Hour))
 	if err != nil {
 		log.Fatalf("Could not enqueue task: %v", err)
 	}
@@ -67,7 +68,7 @@ func EnqueueRebuildVideoTask(id string, keyinfoPath string) error {
 		log.Fatalf("Could not create task: %v", err)
 	}
 
-	info, err := hTaskClient.Enqueue(task, asynq.Queue("low"))
+	info, err := hTaskClient.Enqueue(task, asynq.Queue("low"), asynq.Timeout(1*time.Hour))
 	if err != nil {
 		log.Fatalf("Could not enqueue task: %v", err)
 	}
@@ -84,7 +85,7 @@ func EnqueueDownloadVideoTask(input DownloadRequestInput) error {
 		log.Fatalf("Could not create task: %v", err)
 	}
 
-	info, err := hTaskClient.Enqueue(task, asynq.Queue("critical"))
+	info, err := hTaskClient.Enqueue(task, asynq.Queue("critical"), asynq.Timeout(1*time.Hour))
 	if err != nil {
 		log.Fatalf("Could not enqueue task: %v", err)
 	}
