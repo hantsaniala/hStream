@@ -25,7 +25,7 @@ func StartTaskServer() {
 				"default":  3,
 				"low":      1,
 			},
-			// See the godoc for other configuration options
+			StrictPriority: true,
 		},
 	)
 
@@ -67,7 +67,7 @@ func EnqueueRebuildVideoTask(id string, keyinfoPath string) error {
 		log.Fatalf("Could not create task: %v", err)
 	}
 
-	info, err := hTaskClient.Enqueue(task)
+	info, err := hTaskClient.Enqueue(task, asynq.Queue("low"))
 	if err != nil {
 		log.Fatalf("Could not enqueue task: %v", err)
 	}
@@ -84,7 +84,7 @@ func EnqueueDownloadVideoTask(input DownloadRequestInput) error {
 		log.Fatalf("Could not create task: %v", err)
 	}
 
-	info, err := hTaskClient.Enqueue(task)
+	info, err := hTaskClient.Enqueue(task, asynq.Queue("critical"))
 	if err != nil {
 		log.Fatalf("Could not enqueue task: %v", err)
 	}
