@@ -33,6 +33,7 @@ func StartTaskServer() {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TypeVideoEncode, HandleVideoEncodeTask)
 	mux.HandleFunc(TypeVideoDownloadPrepare, HandlePrepareVideoDownloadTask)
+	mux.HandleFunc(TypeVideoRebuild, HandleVideoRebuildTask)
 	// mux.Handle(tasks.TypeImageResize, tasks.NewImageProcessor())
 	// ...register other handlers...
 
