@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -231,6 +232,13 @@ func PrepareDownloadVideo(w http.ResponseWriter, r *http.Request) {
 func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+
+	if strings.Contains(id, "/") || strings.Contains(id, "\\") || strings.Contains(id, "..") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("invalid id")
+		return
+	}
+
 	filename := fmt.Sprintf("%s.%s", id, ARCHIVE_EXT)
 	filepath := filepath.Join(utils.GetEnv("UPLOAD_ROOT"), "download", filename)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
@@ -244,6 +252,12 @@ type DownloadStatusResponse struct {
 func CheckDownloadStatus(w http.ResponseWriter, r *http.Request) {
 	var stat DownloadStatusResponse
 	id := mux.Vars(r)["id"]
+
+	if strings.Contains(id, "/") || strings.Contains(id, "\\") || strings.Contains(id, "..") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("invalid id")
+		return
+	}
 
 	// TODO: Use better check
 	fileP := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.%s", id, ARCHIVE_EXT))
@@ -279,6 +293,13 @@ func ServeKey(w http.ResponseWriter, r *http.Request) {
 func DeleteDownloadFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+
+	if strings.Contains(id, "/") || strings.Contains(id, "\\") || strings.Contains(id, "..") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("invalid id")
+		return
+	}
+
 	fileP := path.Join(utils.GetEnv("UPLOAD_ROOT"), "download", fmt.Sprintf("%s.%s", id, ARCHIVE_EXT))
 	err := os.Remove(fileP)
 	if err != nil && errors.Is(err, &fs.PathError{}) {
