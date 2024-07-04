@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -117,6 +118,12 @@ func streamSegHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func serveHlsM3u8(w http.ResponseWriter, r *http.Request, mediaBase string, folder string, m3u8Name string) {
+	if strings.Contains(m3u8Name, "/") || strings.Contains(m3u8Name, "\\") || strings.Contains(m3u8Name, "..") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("invalid file name")
+		return
+	}
+
 	mediaFile := fmt.Sprintf("%s/%s", mediaBase, m3u8Name)
 	if folder != "" {
 		mediaFile = fmt.Sprintf("%s/%s/%s", mediaBase, folder, m3u8Name)
@@ -130,6 +137,12 @@ func serveHlsM3u8(w http.ResponseWriter, r *http.Request, mediaBase string, fold
 }
 
 func serveHlsTs(w http.ResponseWriter, _ *http.Request, mediaBase string, folder string, segName string) {
+	if strings.Contains(segName, "/") || strings.Contains(segName, "\\") || strings.Contains(segName, "..") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("invalid file name")
+		return
+	}
+
 	mediaFile := fmt.Sprintf("%s/%s/%s", mediaBase, folder, segName)
 	file, err := os.ReadFile(mediaFile)
 	if err != nil {
