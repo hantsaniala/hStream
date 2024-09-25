@@ -224,12 +224,20 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 		"-hls_playlist_type", "vod",
 		"-hls_flags", "independent_segments",
 		"-hls_segment_type", "mpegts",
-		"-hls_key_info_file", keyinfoPath,
+	}
+
+	if keyinfoPath != "" {
+		encodingArgs = append(encodingArgs, []string{
+			"-hls_key_info_file", keyinfoPath,
+		}...)
+	}
+
+	encodingArgs = append(encodingArgs, []string{
 		"-master_pl_name", fmt.Sprintf("index-%d.m3u8", res),
 		"-hls_segment_filename", path.Join(destDir, "%v/index%02d.ts"),
 		"-var_stream_map", fmt.Sprintf("v:0,a:0,name:%d", res),
 		path.Join(destDir, "%v/plist.m3u8"),
-	}
+	}...)
 
 	cmd := exec.Command("ffmpeg", encodingArgs...)
 

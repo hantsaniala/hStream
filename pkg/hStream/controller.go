@@ -56,7 +56,11 @@ func PostVideo(w http.ResponseWriter, r *http.Request) {
 
 	video.CopyKey()
 
-	keyinfoPath := filepath.Join(utils.GetEnv("KEY_FOLDER"), video.ID, utils.GetEnv("KEYINFO"))
+	var keyinfoPath string
+	encrypt := r.Form["encrypt"][0]
+	if encrypt != "" && encrypt == "true" {
+		keyinfoPath = filepath.Join(utils.GetEnv("KEY_FOLDER"), video.ID, utils.GetEnv("KEYINFO"))
+	}
 
 	EnqueueEncodeVideoTask(currUUID4, keyinfoPath)
 
