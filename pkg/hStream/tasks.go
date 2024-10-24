@@ -259,8 +259,15 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 		log.Fatal(err)
 	}
 
-	playlistData, _ := json.Marshal(input.PlaylistData)
-	videoData, _ := json.Marshal(input.VideoData)
+	playlistData, err := json.Marshal(input.PlaylistData)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	videoData, err := json.Marshal(input.VideoData)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// gen.GenKeyinfo(destDir, fmt.Sprintf("https://{IP_PORT}/%s/%s", input.VID, utils.GetEnv("KEY")))
 	gen.GenKeyinfo(destDir, utils.GetEnv("KEY"))
@@ -282,6 +289,23 @@ func HandlePrepareVideoDownloadTask(ctx context.Context, t *asynq.Task) error {
 
 	os.Remove(filepath.Join(destDir, fmt.Sprintf("index-%d.m3u8", input.Resolution)))
 	os.RemoveAll(filepath.Join(destDir, fmt.Sprint(input.Resolution)))
+
+	key, err := GetPublicKey(input.PublicKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := EncryptFile(key, filepath.Join(destDir, "enc.key"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = os.WriteFile(filepath.Join(destDir, "enc.encrypted"), data, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	os.Remove(filepath.Join(destDir, "enc.key"))
 
 	err = video.ArchiveAndCompress(destDir, downloadDir, input.VID)
 	if err != nil {
