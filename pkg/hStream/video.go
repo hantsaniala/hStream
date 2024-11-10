@@ -229,6 +229,7 @@ func (v *Video) Encode2(res int, keyinfoPath string, destDir string) error {
 	if keyinfoPath != "" {
 		encodingArgs = append(encodingArgs, []string{
 			"-hls_key_info_file", keyinfoPath,
+			"-allowed_extensions", "ALL",
 		}...)
 	}
 
